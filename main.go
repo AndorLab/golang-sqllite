@@ -16,52 +16,28 @@ func startApp() {
 	defer db.Close()
 	initDB()
 
+	user := UserModel{
+		username: "谷中仁",
+		city:     `西安`,
+		skills:   `js`,
+	}
 	// insert
-	result, err := insert()
+	result, err := insert(user)
 	id, err := result.LastInsertId()
-	checkErr(err)
-	fmt.Println(id)
-
+	checkErr(id, err)
+	fmt.Println("操作数据的id:", id)
 	// // update
-	// stmt, err = db.Prepare("update userinfo set username=? where uid=?")
-	// checkErr(err)
-
-	// res, err = stmt.Exec("wangshubo_new", id)
-	// checkErr(err)
-
-	// affect, err := res.RowsAffected()
-	// checkErr(err)
-
-	// fmt.Println(affect)
-
+	updateUser := UserModel{
+		username: "test",
+		city:     `xian`,
+		skills:   `golang`,
+	}
+	affectedRow := update(1, updateUser)
+	fmt.Println("影像的行数：", affectedRow)
 	// // query
-	// rows, err := db.Query("SELECT * FROM userinfo")
-	// checkErr(err)
-	// var uid int
-	// var username string
-	// var department string
-	// var created time.Time
-
-	// for rows.Next() {
-	// 	err = rows.Scan(&uid, &username, &department, &created)
-	// 	checkErr(err)
-	// 	fmt.Println(uid)
-	// 	fmt.Println(username)
-	// 	fmt.Println(department)
-	// 	fmt.Println(created)
-	// }
-
-	// rows.Close()
-
-	// // delete
-	// stmt, err = db.Prepare("delete from userinfo where uid=?")
-	// checkErr(err)
-
-	// res, err = stmt.Exec(id)
-	// checkErr(err)
-
-	// affect, err = res.RowsAffected()
-	// checkErr(err)
-
-	// fmt.Println(affect)
+	list, _ := query()
+	fmt.Printf("%v", list)
+	// delete
+	affect := delete(4)
+	fmt.Println(affect)
 }

@@ -4,9 +4,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func checkErr(err error) {
+func checkErr(data interface{}, err error) (interface{}, error) {
 	if err != nil {
 		log.Error(err)
-		panic("操作失败")
+		return nil, err
 	}
+	return data, err
 }
