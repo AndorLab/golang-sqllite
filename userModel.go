@@ -14,13 +14,16 @@ type UserModel struct {
 	created  int64
 }
 
+// insert 新增
 func (u UserModel) insert() (sql.Result, error) {
-	stmt, err := db.Prepare("INSERT INTO userinfo(username, city, skills, created) values(?,?,?,?)")
+	stmt, err := db.Prepare("insert into userinfo(username, city, skills, created) values(?,?,?,?)")
 	checkErr(stmt, err)
 	res, err := stmt.Exec(u.username, u.city, u.skills, time.Now().Unix())
 	checkErr(res, err)
 	return res, nil
 }
+
+// delete 删除
 func (u UserModel) delete(id int64) int64 {
 	stmt, err := db.Prepare("delete from userinfo where uid=?")
 	checkErr(stmt, err)
@@ -32,7 +35,7 @@ func (u UserModel) delete(id int64) int64 {
 }
 
 // update	更新用户技能
-func (u UserModel) update(id int) int64 {
+func (u UserModel) updateSkills(id int) int64 {
 	stmt, err := db.Prepare("update userinfo set skills=? where uid=?")
 	checkErr(stmt, err)
 	res, err := stmt.Exec(u.skills, id)
@@ -44,7 +47,7 @@ func (u UserModel) update(id int) int64 {
 
 // query 查询所有用户
 func (u UserModel) query() ([]UserModel, error) {
-	rows, err := db.Query("SELECT * FROM userinfo")
+	rows, err := db.Query("select * from userinfo")
 	checkErr(rows, err)
 	var userList = []UserModel{}
 	for rows.Next() {

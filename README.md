@@ -1,19 +1,25 @@
 # 1. Golang with SQLLite Practice
-
 <!-- TOC -->
 
-- [1. Golang with SQLLite Practice](#1-golang-with-sqllite-practice)
-  - [1.1. 简介](#11-%e7%ae%80%e4%bb%8b)
-  - [1.2. 目标](#12-%e7%9b%ae%e6%a0%87)
-  - [1.3. 目的](#13-%e7%9b%ae%e7%9a%84)
-  - [1.4. Coding](#14-coding)
-    - [1.4.1. 目录结构](#141-%e7%9b%ae%e5%bd%95%e7%bb%93%e6%9e%84)
-    - [1.4.2. 安装 SQLLite 库及其他库](#142-%e5%ae%89%e8%a3%85-sqllite-%e5%ba%93%e5%8f%8a%e5%85%b6%e4%bb%96%e5%ba%93)
-    - [1.4.3. 申明 DB 全局变量](#143-%e7%94%b3%e6%98%8e-db-%e5%85%a8%e5%b1%80%e5%8f%98%e9%87%8f)
-    - [1.4.4. 用户模型构建及原子操作](#144-%e7%94%a8%e6%88%b7%e6%a8%a1%e5%9e%8b%e6%9e%84%e5%bb%ba%e5%8f%8a%e5%8e%9f%e5%ad%90%e6%93%8d%e4%bd%9c)
-    - [1.4.5. 在应用中启动并调用用户模型的方法](#145-%e5%9c%a8%e5%ba%94%e7%94%a8%e4%b8%ad%e5%90%af%e5%8a%a8%e5%b9%b6%e8%b0%83%e7%94%a8%e7%94%a8%e6%88%b7%e6%a8%a1%e5%9e%8b%e7%9a%84%e6%96%b9%e6%b3%95)
-    - [1.4.6. 运行结果展示](#146-%e8%bf%90%e8%a1%8c%e7%bb%93%e6%9e%9c%e5%b1%95%e7%a4%ba)
-  - [1.5. 总结](#15-%e6%80%bb%e7%bb%93)
+- [Golang with SQLLite Practice](#golang-with-sqllite-practice)
+  - [简介](#简介)
+  - [目标](#目标)
+  - [目的](#目的)
+  - [Coding](#coding)
+    - [目录结构](#目录结构)
+    - [封装 error 函数](#封装-error-函数)
+    - [安装 SQLLite 库及其他库](#安装-sqllite-库及其他库)
+    - [申明 DB 全局变量](#申明-db-全局变量)
+    - [初始化数据库](#初始化数据库)
+    - [用户模型构建及原子操作](#用户模型构建及原子操作)
+      - [用户模型](#用户模型)
+      - [新增](#新增)
+      - [删除](#删除)
+      - [修改](#修改)
+      - [查询](#查询)
+    - [在应用中启动并调用用户模型的方法](#在应用中启动并调用用户模型的方法)
+    - [运行结果展示](#运行结果展示)
+  - [总结](#总结)
 
 <!-- /TOC -->
 
@@ -51,7 +57,7 @@ Golang 就不多介绍了，能看到这个肯定对 Golang 有一定的了解�
 ├── README.md     # README
 ├── db.go         # 数据库操作
 ├── error.go      # 错误处理工具方法
-├── foo.db        # sqllite 数据库
+├── fcc.db        # sqllite 数据库
 ├── go.mod        # go modules
 ├── go.sum        # go modules
 ├── main.go       # 项目入口
@@ -60,7 +66,22 @@ Golang 就不多介绍了，能看到这个肯定对 Golang 有一定的了解�
 
 ```
 
-### 1.4.2. 安装 SQLLite 库及其他库
+### 1.4.2. 封装 error 函数
+
+因为在 go 中会有很多的 error 的判断，为了代码精简，我们特封装一下 error; 下面的 *interface{}* 代表任何类型，类似 TypeScript 中的 *any*。
+
+```golang
+# error.go
+func checkErr(data interface{}, err error) (interface{}, error) {
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return data, err
+}
+```
+
+### 1.4.3. 安装 SQLLite 库及其他库
 
 使用 go modules 之后，将所需的包放在 import 中，使用 *go mod tidy* 命令后，go 会自动安装程序使用到的包。
 
@@ -78,7 +99,7 @@ SQLLite 包
 _ "github.com/mattn/go-sqlite3"
 ```
 
-### 1.4.3. 申明 DB 全局变量
+### 1.4.4. 申明 DB 全局变量
 
 因为在程序中，我们要通过数据库来获取数据，那么存在一个全局的数据库指针是很有必要的。
 
@@ -87,10 +108,182 @@ _ "github.com/mattn/go-sqlite3"
 var db = new(sql.DB)
 ```
 
-### 1.4.4. 用户模型构建及原子操作
+### 1.4.5. 初始化数据库
 
-### 1.4.5. 在应用中启动并调用用户模型的方法
+SQLLite 初始化数据库非常简单，只要指定数据库驱动和数据库文件就可以。为了在程序的整个生命周期中操作数据库，我们将 db 返回。
 
-### 1.4.6. 运行结果展示
+```golang
+// openDB 打开数据库
+func openDB() *sql.DB {
+	//打开数据库，如果不存在，则创建
+	db, err := sql.Open("sqlite3", "./fcc.db")
+	checkErr(db, err)
+	return db
+}
+```
+创建好 db 后，需要创建表结构，执行如下数据库操作命令即可完成用户表的创建。
+```golang
+// initDB 初始化数据库
+func initDB() {
+	//创建表
+	sqlTable := `
+			CREATE TABLE IF NOT EXISTS userinfo(
+					uid INTEGER PRIMARY KEY AUTOINCREMENT,
+					username VARCHAR(64) NULL,
+					city VARCHAR(64) NULL,
+					skills VARCHAR(128) NULL,
+					created BIGINT NULL
+			);
+			`
+	db.Exec(sqlTable)
+}
+```
+
+### 1.4.6. 用户模型构建及原子操作
+
+构建现代程序，强调程序的健壮性，封装就是比较重要的；用 MVC、 MVVM 的观点，我们需要有一个 Model 来提供对象的原子操作。在这，我们将用户抽象为UserModel，对用户的增删改查封装到 *insert*、*dleete*、*update* 和 *query*。
+
+#### 1.4.6.1. 用户模型
+
+```golang
+// UserModel 用户模型
+type UserModel struct {
+	uid      int64
+	username string
+	city     string
+	skills   string
+	created  int64
+}
+
+```
+对用户的原子操作
+
+#### 1.4.6.2. 新增
+
+```golang
+// insert 新增
+func (u UserModel) insert() (sql.Result, error) {
+	stmt, err := db.Prepare("insert into userinfo(username, city, skills, created) values(?,?,?,?)")
+	checkErr(stmt, err)
+	res, err := stmt.Exec(u.username, u.city, u.skills, time.Now().Unix())
+	checkErr(res, err)
+	return res, nil
+}
+```
+
+#### 1.4.6.3. 删除
+
+```golang
+// delete 删除
+func (u UserModel) delete(id int64) int64 {
+	stmt, err := db.Prepare("delete from userinfo where uid=?")
+	checkErr(stmt, err)
+	res, err := stmt.Exec(id)
+	checkErr(res, err)
+	affect, err := res.RowsAffected()
+	checkErr(affect, err)
+	return affect
+}
+```
+
+#### 1.4.6.4. 修改
+
+```golang
+// update	更新用户技能
+func (u UserModel) update(id int) int64 {
+	stmt, err := db.Prepare("update userinfo set skills=? where uid=?")
+	checkErr(stmt, err)
+	res, err := stmt.Exec(u.skills, id)
+	checkErr(res, err)
+	affect, err := res.RowsAffected()
+	checkErr(affect, err)
+	return affect
+}
+```
+
+#### 1.4.6.5. 查询
+
+```golang
+// query 查询
+func (u UserModel) query() ([]UserModel, error) {
+	rows, err := db.Query("select * from userinfo")
+	checkErr(rows, err)
+	var userList = []UserModel{}
+	for rows.Next() {
+		var user = UserModel{}
+		err = rows.Scan(&user.uid, &user.username, &user.city, &user.skills, &user.created)
+		checkErr(nil, err)
+		userList = append(userList, user)
+	}
+	rows.Close()
+	return userList, nil
+}
+```
+
+### 1.4.7. 在应用中启动并调用用户模型的方法
+
+在上面我们完成了对用户模型及原子操作的封装，那么接下来就是通过应用程序将分装的内容调用，传入正确的参数进行调用。
+我们在此封装一个 *startAPP* 方法，在这个里面我们调用封装好的用户操作的接口，实现功能。
+
+因为数据库要在整个生命周期存在，当程序结束的时候，我们应该将数据库链接释放，所以我们用到了 go 的 *defer* 关键字
+```golang
+# server.go
+  db = openDB()
+  defer db.Close()
+  initDB()
+```
+
+调用用户操作的增删改查并打印结果, 对于不同的操作，我们应该有不同的数据，所以在程序中会有 *user*、和 *updateUser* 两个对象
+
+```golang
+# server.go
+  user := UserModel{
+  	username: "谷中仁",
+  	city:     `西安`,
+  	skills:   `TypeScript`,
+  }
+  // insert
+  result, err := user.insert()
+  id, err := result.LastInsertId()
+  checkErr(id, err)
+  log.Info("增：操作数据的id:", id)
+  // update
+  updateUser := UserModel{
+  	skills: `golang`,
+  }
+  affectedRow := updateUser.updateSkills(1)
+  log.Info("改：影响的行数：", affectedRow)
+  // query
+  queryUser := UserModel{}
+  list, _ := queryUser.query()
+  log.Info("查：", list)
+  // delete
+  affect := queryUser.delete(1)
+  log.Info("删：", affect)  
+  // query
+  list, _ = queryUser.query()
+  log.Info("查：", list)
+```
+
+### 1.4.8. 运行结果展示
+
+```shell
+$ make run
+go run *.go
+{"time":"2019-08-31T14:21:48.941164+08:00","level":"INFO","prefix":"-","file":"server.go","line":"21","message":"增：操作数据的id:1"}
+{"time":"2019-08-31T14:21:48.941842+08:00","level":"INFO","prefix":"-","file":"server.go","line":"27","message":"改：影响的行数：1"}
+{"time":"2019-08-31T14:21:48.942034+08:00","level":"INFO","prefix":"-","file":"server.go","line":"31","message":"查：[{1 谷中仁 西安 golang 1567232508}]"}
+{"time":"2019-08-31T14:21:48.942599+08:00","level":"INFO","prefix":"-","file":"server.go","line":"34","message":"删：1"}
+{"time":"2019-08-31T14:21:48.942696+08:00","level":"INFO","prefix":"-","file":"server.go","line":"38","message":"查：[]"}
+```
 
 ## 1.5. 总结
+
+SQLLite 对开发者非常友好，不用安装在机器上，只要指定SQLLite的驱动和数据库存储文件即可对 SQLLite 数据库进行操作；Golang 作为比较流行的语言，对数据库也非常友好，提供了基本的数据库接口，
+至于用户需要什么样的数据库，自己开发对应的数据库驱动即可。当然在 GitHub 已经有很多开源爱好者开发了比较流行的数据库的驱动可以直接拿来用。
+
+SQLLite 使用的也是标准的 SQL 语法，可以让不同的开发者快速入手。
+
+为什么没有用到 Golang 的 Web 框架？
+
+因为我们的侧重点在 Golang 与 SQLLite，不在 API 实现上，最小化的实现目标，才是我们学习知识最快速的途径。

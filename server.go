@@ -12,7 +12,7 @@ func startApp() {
 	user := UserModel{
 		username: "谷中仁",
 		city:     `西安`,
-		skills:   `js`,
+		skills:   `TypeScript`,
 	}
 	// insert
 	result, err := user.insert()
@@ -21,17 +21,19 @@ func startApp() {
 	log.Info("增：操作数据的id:", id)
 	// update
 	updateUser := UserModel{
-		username: "test",
-		city:     `xian`,
-		skills:   `golang`,
+		skills: `golang`,
 	}
-	affectedRow := updateUser.update(1)
+	affectedRow := updateUser.updateSkills(1)
 	log.Info("改：影响的行数：", affectedRow)
 	// query
 	queryUser := UserModel{}
 	list, _ := queryUser.query()
 	log.Info("查：", list)
 	// delete
-	affect := queryUser.delete(4)
+	affect := queryUser.delete(1)
 	log.Info("删：", affect)
+
+	// query
+	list, _ = queryUser.query()
+	log.Info("查：", list)
 }

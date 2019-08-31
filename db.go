@@ -9,7 +9,7 @@ import (
 // openDB 打开数据库
 func openDB() *sql.DB {
 	//打开数据库，如果不存在，则创建
-	db, err := sql.Open("sqlite3", "./foo.db")
+	db, err := sql.Open("sqlite3", "./fcc.db")
 	checkErr(db, err)
 	return db
 }
