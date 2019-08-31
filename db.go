@@ -23,7 +23,7 @@ func initDB() {
 					username VARCHAR(64) NULL,
 					city VARCHAR(64) NULL,
 					skills VARCHAR(128) NULL,
-					created DATE NULL
+					created BIGINT NULL
 			);
 			`
 	db.Exec(sqlTable)

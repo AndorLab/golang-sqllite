@@ -11,7 +11,7 @@ type UserModel struct {
 	username string
 	city     string
 	skills   string
-	created  time.Time
+	created  int64
 }
 
 func (u UserModel) insert() (sql.Result, error) {
@@ -19,7 +19,7 @@ func (u UserModel) insert() (sql.Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := stmt.Exec(u.username, u.city, u.skills, time.Now().Format("2006-01-02 15:04:05"))
+	res, err := stmt.Exec(u.username, u.city, u.skills, time.Now().Unix())
 	if err != nil {
 		return nil, err
 	}
