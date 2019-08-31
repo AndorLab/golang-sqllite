@@ -28,6 +28,8 @@
 SQLite 是一个进程内的库，实现了自给自足的、无服务器的、零配置的、事务性的 SQL 数据库引擎。它是一个零配置的数据库，这意味着与其他数据库一样，你不需要在系统中配置。在 Golang 中使用SQLLite 也相当简单，只需要安装 SQLLite 的Golang  包即可使用；
 Golang 就不多介绍了，能看到这个肯定对 Golang 有一定的了解。
 
+仓库地址：<https://github.com/AndorLab/golang-sqllite>
+
 ## 1.2. 目标
 
 使用 SQLLite 通过构建一个社区用户表，包含如下字段; 通过 SQLLite 的 API 实现对社区用户表进行增删改查。
