@@ -22,7 +22,7 @@ func startApp() {
 		skills:   `js`,
 	}
 	// insert
-	result, err := insert(user)
+	result, err := user.insert()
 	id, err := result.LastInsertId()
 	checkErr(id, err)
 	fmt.Println("操作数据的id:", id)
@@ -32,12 +32,13 @@ func startApp() {
 		city:     `xian`,
 		skills:   `golang`,
 	}
-	affectedRow := update(1, updateUser)
-	fmt.Println("影像的行数：", affectedRow)
+	affectedRow := updateUser.update(1)
+	fmt.Println("影响的行数：", affectedRow)
 	// // query
-	list, _ := query()
+	queryUser := UserModel{}
+	list, _ := queryUser.query()
 	fmt.Printf("%v", list)
 	// delete
-	affect := delete(4)
+	affect := queryUser.delete(4)
 	fmt.Println(affect)
 }
